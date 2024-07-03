@@ -1,18 +1,21 @@
 # Yanling Liu
-Hi, I am Yanling Liu, currently a full-time Senior Data Analytics consultant and a part-time Data Science Master student at UC Berkeley. Welcome!
+Hi, I am Yanling Liu, currently a Senior Data Analytics consultant at a Big Four accounting firm and a part-time Data Science Master student at UC Berkeley. Welcome!
 
 ## Skills
 * Python (SKLearn, Matplotlib, Plotly, Pandas, Numpy, etc.)
 * SQL
 * R
 * Tableau
+* Alteryx
 * HTML
 * JavaScipt
+* Microsoft Office
+* Git
 
 ## Projects
 ### Project 1 (Proj01):  Explore Covid-19 data set
-* LanguageL Python
-### Project 2 (In Progress): Design relational database for Formula Electric(Racing Car Design) at Berkeley
+* Language: Python
+### Project 2 (Proj02): Design relational database for Formula Electric(Racing Car Design) at Berkeley
 * Language: SQL
 
 ## Classes
