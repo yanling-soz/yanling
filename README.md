@@ -18,7 +18,7 @@ Hi, I am Yanling Liu, currently a Senior Data Analytics consultant at a Big Four
 ### Project 2 (Proj02): Design relational database for Formula Electric(Racing Car Design) at Berkeley
 * Language: SQL
 
-## Classes
+## Relevant Classes
 * Data Science Programming(Python, DS 200)
 * Statistics for Data Science (R, DS 203)
 * Research Design and Applications for Data Science (DS 201)
