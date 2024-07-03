@@ -1,5 +1,13 @@
 # Yanling Liu
-Hi, I am Yanling Liu, currently studying Data Science and Environmental Economics & Policy at UC Berkeley. Welcome!
+Hi, I am Yanling Liu, currently a full-time Senior Data Analytics consultant and a part-time Data Science Master student at UC Berkeley. Welcome!
+
+## Skills
+* Python (SKLearn, Matplotlib, Plotly, Pandas, Numpy, etc.)
+* SQL
+* R
+* Tableau
+* HTML
+* JavaScipt
 
 ## Projects
 ### Project 1 (Proj01):  Explore Covid-19 data set
@@ -8,25 +16,22 @@ Hi, I am Yanling Liu, currently studying Data Science and Environmental Economic
 * Language: SQL
 
 ## Classes
-* Industrial and Commercial Data Systems (IEOR 115, MySQL)
-* Data Mining and Analytics (DATA 144, Python)
-* Introduction to Artificial Intelligence (COMPSCI 188, Python)
-* Business Analytics (UGBA 104, Excel)
-* Data, Inference, and Decisions (DATA C102, Python)
-* Concepts in Computing with Data (STAT 133, R/HTML)
-* Principles & Techniques of Data Science (COMPSCI C100, Python/SQL)
+* Data Science Programming(Python, DS 200)
+* Statistics for Data Science (R, DS 203)
+* Research Design and Applications for Data Science (DS 201)
+* Industrial and Commercial Data Systems (MySQL, IEOR 115)
+* Data Mining and Analytics (Python, DATA 144)
+* Introduction to Artificial Intelligence (Python, COMPSCI 188)
+* Business Analytics (Excel, UGBA 104)
+* Data, Inference, and Decisions (Python, DATA C102)
+* Concepts in Computing with Data (R/HTML, STAT 133)
+* Principles & Techniques of Data Science (Python/SQL, COMPSCI C100)
 * Probability for Data Science (STAT 140)
-* Data Structures (COMPSCI 61B, Java)
-* Computational Structures in Data Science (COMPSCI 88, Python)
-* Economic Development (ENVECON C151, R)
+* Data Structures (Java, COMPSCI 61B)
+* Computational Structures in Data Science (Python, COMPSCI 88)
+* Economic Development (R, ENVECON C151)
 * Human Contexts and Ethics of Data (HISTORY C184D)
 * Financial Economics, Micro/Macroeconomic Analysis, International Trade, Economics of Innovation and Intellectual Property
 
 
-## Skills
-* Python (SKLearn, Matplotlib, Plotly, Pandas, Numpy, etc.)
-* SQL
-* R
-* HTML
-* JavaScipt
 
