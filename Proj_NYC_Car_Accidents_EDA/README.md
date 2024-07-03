@@ -1,0 +1,1 @@
+The goal of this research project was to evaluate the motor vehicle accidents dataset for NYC to determine if there are any patterns in the data to indicate social or built infrastructure gaps leading to accidents/deaths that may be preventable and or unevenly born by vulnerable groups.
