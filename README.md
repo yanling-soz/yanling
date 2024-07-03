@@ -10,8 +10,7 @@ Hi, I am Yanling Liu, currently a Senior Data Analytics consultant at a Big Four
 * HTML
 * JavaScipt
 * Git
-* Microsoft Excel
-* Microsoft Office
+* Microsoft Office (Professionally skilled in Excel)
 
 ## Projects
 ### Proj_Ads_Auction:  Building a Second Pricing Auction
