@@ -1,0 +1,382 @@
+---
+title: "Lab1_2024_06_29_Analysis"
+output: html_notebook
+---
+
+__1) Load Necessary Librarys and Clean Data__
+In this section we will import necessary libraries and packages. 
+Then, we will load our raw data and select the columns we need for analysis.
+
+```{r}
+# Load necessary libraries
+library(ggplot2)
+library(patchwork)
+library(dplyr)
+
+# Load the data from csv file to a data frame
+survey_data_org <- read.csv("~/203_Labs_and_Practices/Lab1_Team_project/anes_pilot_2022_csv_20221214.csv")
+
+# Select the columns that will be used in our analysis and store it in a reduced data frame
+screened_data <- survey_data_org %>%
+  select(caseid, weight, weight_spss, reg, regdiff, turnout22, turnout22ns, pipevote22a, pipevote22b, votehard, vharder_0, vharder_1, vharder_2, vharder_3, vharder_4, vharder_5, vharder_6, vharder_7, vharder_8, vharder_9, vharder_10, vharder_11, vharder_12, vharder_t, waittime, triptime, turnout20, turnout20b, pipevote20, vote20, vote24dt, pid1d, pid1r, pidstr, pidlean, pid_x, imppartyid, votereg, presvote16post, presvote20post, pid3, pid7, ideo5, newsint, iwstartdate, iwstarttime, iwenddate, iwendtime)
+
+# Display the first 5 rows of the reduced data frame to confirm the results
+head(screened_data)
+```
+
+__2) Filter the valid data and remove those who we shouldn't be considered as 'potential voters'__
+
+Below are the tables and columns we considered in the screening stage of potential voters.
+
+For column 'weight', we remove all records with 'N/A' since we consider it invalid
+
+For column 'reg': Are you registered to vote, or not
+            tabulation:  Freq.   Numeric  Label 
+                         1,319         1  Yes, registered to vote at my                                         
+                            70         2  Yes, registered to vote at a                                          
+                           196         3  No, not registered 
+Decision: We well discard the columns with value '3' since they are not considered as potential voters.
+
+
+For column 'turnout22': Did you vote on November 8, 2022?
+            tabulation:  Freq.   Numeric  Label 
+                           520        ‐1  inapplicable, legitimate skip                            
+                           336         1  Definitely voted in person on Nov 8 
+                           206         2  Definitely voted in person, before Nov 8 
+                           264         3  Definitely voted by mail                            
+                           223         4  Definitely did not vote                             
+                           36          5  Not completely sure 
+Decision: We well use all records including those with value '4' (Definitely did not vote)
+The reason why we decided to include all columns of this table is because there may be cases where voters were willing to vote but gave up due to typical difficulties. 
+
+```{r}
+# Remove all records with N/As from 'weight'
+screened_data <- screened_data %>% filter(!is.na(weight))
+# This drops 85 records and 1,500 records are remaining
+
+# Discard all records with value '3' (No, not registered) in column 'reg'
+first_screening <- screened_data %>%
+  filter(reg != 3)
+# Now we have 1,308 observations remaining
+
+```
+
+
+__3) Adding Republican / Democrat as a column__
+
+Here we wrote codes of identifying whether the voter is a democrat or republican. We decided to use pid_x column
+This had the highest response rate by survey takers on which party they most likely fall into. 
+We grouped (strong Democrat ~ lean Democrat) to a Democrat denoted as 1 and grouped (lean Republican ~ strong Republican) into another group denoted as 2. 
+These will be saved into a new column Political_party_affinity; if independent or skip is used, NA will be placed.
+
+pid_x : Summary of the Party ID
+            tabulation:  Freq.   Numeric  Label 
+                           371         1  Strong Democrat 
+                           183         2  Democrat 
+                           141         3  Lean Democrat 
+                           273         4  Independent 
+                           159         5  Lean Republican 
+                           172         6  Republican 
+                           284         7  Strong Republican 
+                             2         .   
+
+
+```{r}
+# Create a new column for political party affinity
+second_screening <- first_screening %>%
+  mutate(Political_party_affinity = case_when(
+    pid_x %in% c(1, 2, 3) ~ 1,
+    pid_x %in% c(5, 6, 7) ~ 2,
+    TRUE ~ NA_real_
+  ))
+
+# Filter for Republicans and Democrats
+filtered_data <- second_screening %>%
+  filter(!is.na(Political_party_affinity))
+# This leaves us 1,143 observations in final
+
+# Plot the counts of each political party
+party_counts <- filtered_data %>%
+  count(Political_party_affinity)
+
+Party_Count_Plot <- ggplot(party_counts, aes(x = factor(Political_party_affinity), y = n, fill = factor(Political_party_affinity))) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = n), vjust = -0.5) +
+  scale_fill_manual(name = "Political Party", 
+                    values = c("1" = "lightblue", "2" = "pink"), 
+                    labels = c("1" = "Democrat", "2" = "Republican")) +
+  labs(title = "Counts of Political Party Affinity",
+       x = "Political Party",
+       y = "Number of People") +
+  theme_minimal()
+
+print(Party_Count_Plot)
+print(party_counts)
+
+```
+
+__4) Now Let's Create Combined Difficulty Analysis for Democrats and Republicans__
+
+Method 1) Use the vharder columns to measure difficulty. 
+
+vharder_1 to vharder_11 contains the results of survey questions asking difficulty on typical subjects.
+We will combine these datsets into a single column and measure overall difficulty.
+
+<The original survey questions coming from ANES report>
+
+[vharder0]__Difficulty registering to vote
+[vharder1] __ Long wait time at my polling place
+[vharder2] __ Concerns about my identification card
+[vharder3] __ The voting machine was too complicated to operate
+[vharder4] __ Hard to figure out where my polling place was located
+[vharder5] __ Takes too long to get to the polling place from where I live
+[vharder6] __ Costs too much for transportation to my polling place
+[vharder7] __ My work schedule
+[vharder8] __ Bad weather
+[vharder9] __ Difficult to obtain an absentee ballot
+[vharder10] __ Did not have postage to mail back my ballot
+[vharder11] __ Other problem [TEXT BOX 60 CHARACTERS]
+
+Coding Explanation)
+In the original data set, each individual is supposed to mark '1' for each question if he/she feels that topic difficult and mark '2' if they don't feel difficult. 
+Our main idea is to take the sum of all 11 columns and make a combined column named as 'overall_hard'.
+Then, if the individual marked all 11 questions as '2' (not difficult), the value would be 22
+If the individual marked all 11 questions as '1' (difficult), the value would be 11
+So the range is from 11 to 22
+
+However, to make the results easier to understand,
+we will convert all '2's into '0's instead.
+
+Then, the value of 'overall_hard' will range from 0 to 11
+0 is not difficult at all and  11 would be extremely difficult. 
+We will measure the weighted mean of the 2 different subsets of this column and compare how democrats and republicans responded for difficulty in voting.
+
+We are going to make 2 different subsets.
+
+1) Data set of Democrats only
+2) Data set of Republicans only
+
+Our final goal is to run a hypothesis test on this two different subsets.
+
+
+```{r}
+# mutate the values of columns 'vharder_1 to 11'. convert all '2's into '0s'
+filtered_data <- filtered_data %>%
+  mutate(across(vharder_1:vharder_11, ~ ifelse(. == 2, 0, .)))
+
+# Take the sum of all vharder columns and store it in 'overall_hard'
+filtered_data <- filtered_data %>%
+  mutate(overall_hard = rowSums(select(., vharder_1:vharder_11)))
+
+# create separate datasets for Democrats / Republicans
+democrats <- filtered_data %>%
+  filter(Political_party_affinity == 1)
+# 611 Observations for democrats
+
+republicans <- filtered_data %>%
+  filter(Political_party_affinity == 2)
+# 532 Observations for republicans
+
+# calculate counts for Democrats / Republicans
+combined_overall_hard_counts_dems <- democrats %>%
+  count(overall_hard)
+
+combined_overall_hard_counts_reps <- republicans %>%
+  count(overall_hard)
+
+
+# Plot difficulty for Democrats
+Dem_Plot <- ggplot(combined_overall_hard_counts_dems, aes(x = factor(overall_hard), y = n)) +
+  geom_bar(stat = "identity", fill = "lightblue") +
+  geom_text(aes(label = n), vjust = -0.5) +
+  labs(title = "Difficulty histogram for Democrats",
+       x = "Difficulty",
+       y = "Number of people") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Plot difficulty for Republicans
+Rep_Plot <- ggplot(combined_overall_hard_counts_reps, aes(x = factor(overall_hard), y = n)) +
+  geom_bar(stat = "identity", fill = "pink") +
+  geom_text(aes(label = n), vjust = -0.5) +
+  labs(title = "Difficulty histogram for Republicans",
+       x = "Difficulty",
+       y = "Number of people") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Plot the results on a single screen
+combined_plot <- Dem_Plot + Rep_Plot
+print(combined_plot)
+
+
+```
+
+__5) Now, lets run a hypothesis test with Method 1__
+
+As we see on the distribution plots, we have a highly skewed distribution
+Since our dataset is unpaired and
+1) ordinal variable (based on survey data with binary scale)
+2) IID
+
+We will take the Wilcoxon rank-sum test
+
+First we need to calculate the weigthed mean of each subset. 
+We have the weights ranging from 0 to 11 (0 is not difficult at all, 11 is very difficult)
+Then this is how we should calculate the weighted mean (expected value)
+weighted_mean = sum(count*value) / total_count
+For example, the democrat subset's weighted mean would be
+(0*361 + 1*112 + 2*51 + 3*23 + 4*10 + 5*3 + 6*2 + 7*2 + 8*1 + 10*2) / 567(total count)
+
+Running multiple experiments, we recognized the wilcoxon rank sum test function calculates the weighted means automatically. 
+So, we may simply use that function. 
+
+Below are the codes that we used to be sure that the calculation was correct.
+
+We used 3 different methods and compared the results.
+1) run a test with the original data set.
+2) calculate the weighted mean manually with mathematic equations
+3) run a test with a new column generated as applying the weight to the counts.
+
+The conclusion is that all tests produce the same result.
+So we are confident that our test is valid.
+
+```{r}
+# Run the wilcoxon rank sum test with the original data set
+wilcox_test_result_org <- wilcox.test(democrats$overall_hard, republicans$overall_hard)
+print(wilcox_test_result_org)
+
+# Cross check) Check if the wilcox_test result with the original data is same with manual calculation
+
+# Step 1) Calculate the weighted mean manually.
+weighted_mean_dem <- sum(combined_overall_hard_counts_dems$overall_hard * combined_overall_hard_counts_dems$n) / sum(combined_overall_hard_counts_dems$n)
+weighted_mean_rep <- sum(combined_overall_hard_counts_reps$overall_hard * combined_overall_hard_counts_reps$n) / sum(combined_overall_hard_counts_reps$n)
+print(weighted_mean_dem)
+print(weighted_mean_rep)
+# weighted mean of democrats: 0.7021277, weighted mean of republicans: 0.3515038
+
+# Step 2) Generate a new column with applied weights using 'rep'
+dem_scores <- rep(combined_overall_hard_counts_dems$overall_hard, combined_overall_hard_counts_dems$n)
+rep_scores <- rep(combined_overall_hard_counts_reps$overall_hard, combined_overall_hard_counts_reps$n)
+mean_dem_scores <- mean(dem_scores)
+mean_rep_scores <- mean(rep_scores)
+print(mean_dem_scores)
+print(mean_rep_scores)
+# weighted mean of democrats: 0.7021277, weighted mean of republicans: 0.3515038
+
+# Run the Wilcoxon rank sum test with the weight applied columns
+wilcox_test_result <- wilcox.test(dem_scores, rep_scores)
+print(wilcox_test_result)
+# W = 187526, p-value = 3.998e-08
+
+
+# W = 187526, p-value = 3.998e-08
+# The results are identical
+```
+
+__6) For the test result above, the reason why the p_value is too low may be a result of the scale.__
+
+To be sure, we scaled down the distribution to 0 to 1 (originally, it is 0 to 11)
+If the test produces the exact same value, it means the scale doesn't affect the test result.
+
+```{r}
+# Normalize the overall_hard values
+combined_overall_hard_counts_dems$normalized_overall_hard <- combined_overall_hard_counts_dems$overall_hard / 11
+combined_overall_hard_counts_reps$normalized_overall_hard <- combined_overall_hard_counts_reps$overall_hard / 11
+
+# Use rep function to create vectors of each subset using normalized values
+dem_scores_norm <- rep(combined_overall_hard_counts_dems$normalized_overall_hard, combined_overall_hard_counts_dems$n)
+rep_scores_norm <- rep(combined_overall_hard_counts_reps$normalized_overall_hard, combined_overall_hard_counts_reps$n)
+
+# Perform the Wilcoxon rank sum test using normalized scores
+wilcox_test_result_norm <- wilcox.test(dem_scores_norm, rep_scores_norm)
+print(wilcox_test_result_norm)
+# W = 187526, p-value = 3.998e-08
+
+
+# We have found the result is identical.
+# So we can reject the null
+# The result tells us that the democrats feel more difficulty compared to republicans.
+```
+
+
+__7) In addition, as an alternative method, lets look at votehard which is a single ordinal scale question on voting difficulty__
+
+This is an alternative analysis.
+We have conducted this analysis to compare it with our primary analysis
+We used 'votehard' column
+
+
+votehard: How difficult was it for you to vote?
+            tabulation:  Freq.   Numeric  Label 
+                           417        ‐1  inapplicable, legitimate skip                          
+                           1,009         1  Not difficult at all 
+                            98         2  A little difficult 
+                            48         3  Moderately difficult 
+                             7         4  Very difficult 
+                             6         5  Extremely difficult 
+
+
+```{r}
+
+# create separate datasets for Democrats / Republicans
+# We will remove all values with -1 since its invalid data (inapplicable, legitimate skip)
+democrats_alter <- filtered_data %>%
+  filter(Political_party_affinity == 1) %>%
+  filter(votehard != -1)
+# 521 Observations for democrats
+
+republicans_alter <- filtered_data %>%
+  filter(Political_party_affinity == 2) %>%
+  filter(votehard != -1)
+# 448 Observations for republicans
+
+# calculate counts for Democrats / Republicans
+alternative_votehard_dem <- democrats_alter %>%
+  count(votehard)
+
+alternative_votehard_rep <- republicans_alter %>%
+  count(votehard)
+
+
+# Plot difficulty for Democrats
+Dem_Plot_alter <- ggplot(alternative_votehard_dem, aes(x = factor(votehard), y = n)) +
+  geom_bar(stat = "identity", fill = "lightblue") +
+  geom_text(aes(label = n), vjust = -0.5) +
+  labs(title = "Difficulty histogram for Democrats",
+       x = "Difficulty",
+       y = "Number of people") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Plot difficulty for Republicans
+Rep_Plot_alter <- ggplot(alternative_votehard_rep, aes(x = factor(votehard), y = n)) +
+  geom_bar(stat = "identity", fill = "pink") +
+  geom_text(aes(label = n), vjust = -0.5) +
+  labs(title = "Difficulty histogram for Republicans",
+       x = "Difficulty",
+       y = "Number of people") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+# Plot the results on a single screen
+combined_plot_alter <- Dem_Plot_alter + Rep_Plot_alter
+print(combined_plot_alter)
+
+```
+
+__8) Now lets run a wilcoxon rank sum test for the alternative method as well__
+
+The difference is that the weighted mean is a single value and the replicate function creates a vector.
+
+```{r}
+# Run the Wilcoxon rank sum test with original data
+wilcox_test_result_samp_2 <- wilcox.test(democrats_alter$votehard, republicans_alter$votehard)
+print(wilcox_test_result_samp_2)
+# W = 128919, p-value = 2.351e-06
+```
+
+__9) Compare the result__
+The P-value is still extremely low. we can reject the null
+(Democrats feel the voting more difficult)
+
